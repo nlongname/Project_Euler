@@ -104,7 +104,7 @@ def steady_squares_direct(max_digits=10000, base=14):
                 squares.append(squared)
             else:
                 next_dig.append(0)
-    inv = {1:1, 3:5, 5:3, 9:11, 11:9, 13:13}
+    inv = {1:1, 3:5, 5:3, 9:11, 11:9, 13:13} #base 14 is actually hardcoded in the inverses, but it could be generalized if there was a reason to
     a = [0]*len(ssd)
     for d in range(1,max_digits):
         if d%100==0:
