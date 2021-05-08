@@ -1,3 +1,10 @@
+# https://projecteuler.net/problem=95
+# Concept based on amicable numbers (numbers whose sum of proper factors add up to each other)
+# e.g. 220: 1+2+4+5+10+11+20+22+44+55+110 = 284
+# 284: 1+2+4+71+142 = 220
+# In this case we're looking for longer cycles, e.g. 12496 -> 14288 -> 15472 -> 14536 -> 14264 (-> 12496)
+# Find the smallest member of the longest amicable chain with no element exceeding one million.
+
 import math
 record = {}
 sums={0:0, 1:0}

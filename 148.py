@@ -1,6 +1,9 @@
+# https://projecteuler.net/problem=148
+# Find the number of entries which are not divisible by 7 in the first one billion (10**9) rows of Pascal's triangle
+
 import math
 
-def brute_pascal(rows, mod=7):
+def brute_pascal(rows, mod=7): #mostly just to verify/debug calc_pascal for small numbers
     r = [1]
     total=1
     #print(r)

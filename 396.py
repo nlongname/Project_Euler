@@ -1,3 +1,14 @@
+# https://projecteuler.net/problem=396
+# For any positive integer n, the nth weak Goodstein sequence {g_1, g_2, g_3, ...} is defined as:
+# g_1 = n; for k > 1, g_k is obtained by writing g_k-1 in base k, interpreting it as a base k + 1 number, and subtracting 1.
+# The sequence terminates when g_k becomes 0.
+# G(n) is the number of non-zero elements in the nth weak Goodstein sequence
+# Find the last 9 digits of ∑ G(n) for 1 ≤ n < 16.
+
+# Note: I solved this once before, it was an absolute bear, and then the file was corrupted and I lost all my code.
+# It's the reason I started using version control. 
+# I've tried to recreate it (so far unsuccessfully), but might come back to it.
+
 import math, time
 
 def convert_to(n, b): #decimal to listified b-base number

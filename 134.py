@@ -1,9 +1,15 @@
+# https://projecteuler.net/problem=134
+# We have pairs of consecutive primes and are looking for the smallest number whose 
+# last digits are formed by p1, while also being divisible by p2
+# Besides (3, 5) this always exists
+# Find the sum of that number for every pair of consecutive primes with 5 ≤ p1 ≤ 1000000
+
 primes = []
 with open('primes.txt', 'r') as filehandle:
     primes = [int(current_prime.rstrip()) for current_prime in filehandle.readlines()]
 #print(len(primes))
-primes = list(dict.fromkeys(primes))
-primes.sort()
+primes = list(dict.fromkeys(primes)) #remove duplicates, just in case
+primes.sort() #sort them, since dict keys are guaranteed to be in order
 #print(len(primes))
 
 def find_rule(n:int, addition=True, subtraction=True): #finding a human-readable divisibility rule, you multiply the last digit by 'multiplier' and either add or subtract it from the rest of the number

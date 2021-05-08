@@ -1,3 +1,10 @@
+# https://projecteuler.net/problem=284
+# A 'steady square' is a number whose square ends in the same digits
+# i.e. 76^2 = 5776 ends in '76', so 76 is a steady square
+# Leading 0's aren't allowed
+# Find the sum of the digits of all the n-digit steady squares in base 14
+# for 1 ≤ n ≤ 10000 (decimal) and give your answer in base 14
+
 def mult(x, y, base=14):#base-indep. mult. using lists
     if [] in [x, y]:
         return []
@@ -104,7 +111,7 @@ def steady_squares_direct(max_digits=10000, base=14):
                 squares.append(squared)
             else:
                 next_dig.append(0)
-    inv = {1:1, 3:5, 5:3, 9:11, 11:9, 13:13} #base 14 is actually hardcoded in the inverses, but it could be generalized if there was a reason to
+    inv = {1:1, 3:5, 5:3, 9:11, 11:9, 13:13} #this is the only place base 14 is actually hardcoded in, but it could be generalized if there was a reason to
     a = [0]*len(ssd)
     for d in range(1,max_digits):
         if d%100==0:
