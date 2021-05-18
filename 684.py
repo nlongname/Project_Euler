@@ -27,4 +27,4 @@ total = 0
 for f in fib[2:]:
     total += S(f)
     total %= 1000000007
-    print(fib.index(f), total)
+    print(fib.index(f), f, total)
