@@ -1,28 +1,7 @@
 import itertools
+import functools
 import sympy
-
-# Notes as I explore:
-# F(p) is (p-1)*(p-2) when p%3 != 1 (usually p%3 is 2, but it's 0 when p==3)
-
-#if p%3 == 1, you get (p-1)/3 * (some multiple of 9)
-
-def F(p:int): #I'm assuming p is a prime, but I don't think it actually makes a difference in this function
-    a = [x**3%p for x in range(1,p)]
-    #print(a)
-    b = [(x[0]+x[1])%p for x in itertools.product(a,a)]
-    #print(b)
-    c = [x for x in list(set(b)) if x in a]
-    #print(c)
-    d = [b.count(x) for x in c] #they always seem to have the same count
-    print(d)
-    return sum(d)
-
-
-for i in sympy.primerange(0,10**2):
-    if i%3==1:
-        temp = F(i)
-        print(i,temp, temp/(i-1))
-
+import math
 
 # a few helper functions, not sure how helpful they'll really be
 
@@ -48,11 +27,31 @@ def frac_mod(n:int, d:int, p:int):
     multiplier = frac_mod(-n%d, p%d, d)
     return int((p*multiplier+n)/d)
 
+def power_mod(base:int, exp:int, m:int):
+    if exp == 0:
+        return 1
+    # to make this faster, we'll use a binary method
+    # first, write the exponent in binary (lowest power on left)
+    b = []
+    while exp > 0:
+        b.append(exp%2)
+        exp = int(exp/2)
+    powers = [base]
+    for i in b[1:]:
+        temp = powers[-1]**2 #find all the binary powers
+        temp %= m
+        powers.append(temp)
+    result = [b[i]*powers[i] for i in range(len(b)) if b[i] != 0] #drop the ones with zeroes
+    result = functools.reduce(lambda x, y: x*y%m, result)
+    return int(result)
+
 # using this on the difference of cubes formula
 # a^3 - b^3 = (a-b)(a^2-2ab+b^2) (just the quadratic, a-b can't be 0 mod p)
 # or (a+n)^3 - a^3 = 3a^2*n+3a*n^2+n^3
 # could help figure out how they repeat and where
-def quad_mod(a:int, b:int, c:int, mod:int):
+def quad_mod(a:int, b:int, c:int, mod:int): #assumes mod is a prime
+    if not sympy.isprime(mod):
+        raise Exception("modulus must be prime")
     # (a*x^2 + b*x + c) % mod == 0
     a %= mod
     b %= mod
@@ -70,79 +69,149 @@ def quad_mod(a:int, b:int, c:int, mod:int):
             return [] #to match our normal output
 
     # so I can find square roots later as needed
-    squared = [x*x%mod for x in range(mod)]
+    #squared = [x*x%mod for x in range(mod)]
     
     #now for the actual stuff:
     # start with eliminating a
-    try:
-        if a != 1:
-            mult = frac_mod(1,a,mod)
-            a = a*mult % mod
-            b = b*mult % mod
-            c = c*mult % mod
-        # regular completing the square
-        # (x+d)^2 = (x^2+2xd + d^2)
-        # so b is 2d, b/2 is d
-        if b%2 == 0:
-            d = int(b/2)
-        else:
-            d = frac_mod(b,2,mod)
-        # once we do that, we have x^2 + 2d + c = 0
-        # add d^2 - c to both sides
-        # x^2 + 2d + d^2 = (x+d)^2 = d^2 - c
-        rhs = (d*d - c)%mod
-        # I don't think it's worth finding prime factorization, chinese remainder theorem, etc
-        # so we just brute forced the square root
-        # we have x+d = sqrt(rhs), so x = sqrt(rhs)-d (%mod)
-        results = []
-        for i in range(mod):
-            if squared[i] == rhs:
-                results.append((i-d)%mod)
-        return results
-    
-    except:
-        if a==1:
-            #then something went wrong later in the process that I can't fix
+    if a != 1:
+        mult = frac_mod(1,a,mod)
+        a = a*mult % mod
+        b = b*mult % mod
+        c = c*mult % mod
+    # regular completing the square
+    # (x+d)^2 = (x^2+2xd + d^2)
+    # so b is 2d, b/2 is d
+    if b%2 == 0:
+        d = int(b/2)
+    else:
+        d = frac_mod(b,2,mod)
+    # once we do that, we have x^2 + 2d + c = 0
+    # add d^2 - c to both sides
+    # x^2 + 2d + d^2 = (x+d)^2 = d^2 - c
+    rhs = (d*d - c)%mod
+    # first check if it's a regular square number
+    temp = math.sqrt(rhs)
+    if int(temp) == temp:
+        rhss = [int(temp), mod-int(temp)]
+    else:
+        # modulo square roots are a little involved
+        # first check if there is one with Euler's criterion
+        # +1 means yes, -1 % mod == mod-1 means no
+        criterion = power_mod(rhs,(mod-1)/2,mod)
+        if criterion == mod-1:
             return []
         else:
-            #it's possible for a to have a square root, but no inverse
-            #if you're lucky you can sometimes complete the square
-            # say sqrt(a) is o, we want o^2*x^2+2odx+d^2 = (ox+d)^2
-            options = [x for x in range(mod) if squared[x]==a]
-            ds = []
-            for o in options:
-                try:
-                    ds.append(frac_mod(b,2*o, mod))
-                except:
-                    ds.append(None)
-            # if that worked, we have o^2*x^2 + 2odx + c = 0, add d^2-c to both sides
-            # to get (ox+d)^2 = d^2-c
-            rhss = []
-            for d in ds:
-                if d != None:
-                    temp = (d*d-c)%mod
-                    rhss.append([i for i in range(mod) if squared[i]==temp])
+            # now actually find it
+            # if mod%4 == 3 there's a shortcut
+            if mod%4 == 3:
+                temp = power_mod(rhs,(mod+1)/4,mod)
+                if power_mod(temp, 2, mod) == rhs:
+                    rhss = [temp, mod-temp]
                 else:
-                    rhss.append([])
-            # ox+d = sqrt(d^2-c)
-            results=[]
-            for i in range(len(rhss)):
-                if rhss[i] != []:
-                    for r in rhss[i]:
-                        try:
-                            temp = frac_mod(r-ds[i], options[i], mod)
-                            results.append(temp)
-                        except:
-                            next
-            results = list(set(results))
-            results.sort()
-            return results
+                    return []
+            else:
+                #otherwise use https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm#The_algorithm
+                Q = mod-1
+                S = 0
+                while Q%2 == 0:
+                    Q /= 2
+                    S += 1
 
-# went a little overboard on that, many edge cases weren't necessary for this
-# I just thought it was cool, and tried to make it work as thoroughly as possible
-# turns out solving modulo quadratics is harder than I expected
-# there are a lot of weird cases where completing the square doesn't work
-# even when there are fairly obvious answers by inspection
-# especially with an even modulus
+                #find z, a number without a square root in our modulo
+                z=1 #can't be 0 or 1
+                while criterion == 1:
+                    z += 1
+                    criterion = power_mod(z,(mod-1)/2,mod)
+                #prepare for looping
+                M = S
+                c = power_mod(z,Q,mod)
+                t = power_mod(rhs,Q,mod)
+                R = power_mod(rhs,(Q+1)/2,mod)
+                while t not in [0, 1]:
+                    temp = t
+                    i=0
+                    while temp != 1:
+                        i += 1
+                        temp = temp*temp % mod
+                    b = power_mod(c,2**(M-i-1),mod)
+                    M = i
+                    c = b**2 % mod
+                    t = (t * b**2) % mod
+                    R = (R * b) % mod
+                if t==0:
+                    rhss=[0]
+                elif t==1:
+                    rhss=[int(R), mod-int(R)]
+    # we have x+d = sqrt(rhs), so x = sqrt(rhs)-d (%mod)
+    results = [(r-d)%mod for r in rhss]
+    results.sort()
+    return results
 
-# Since we're only using prime modulus, I'm going to pare this down to the things I actually need
+# Notes as I explore:
+# F(p) is (p-1)*(p-2) when p%3 != 1 (usually p%3 is 2, but it's 0 when p==3)
+
+#if p%3 == 1, you get (p-1)*something, starts out as multiples of 9 but that doesn't last too long
+
+def F_naive(p:int,verbose:bool=False): #assuming p is prime
+    a = [x**3%p for x in range(1,p)]
+    b = [(x[0]+x[1])%p for x in itertools.product(a,a)]
+    c = [x for x in list(set(b)) if x in a]
+    d = [b.count(x) for x in c] #they always seem to have the same count
+    if verbose:
+        print(a)
+        print(b)
+        print(c)
+        print(d)
+    return sum(d)
+
+def F(p:int,verbose:bool=False): #assuming p is prime
+    if not sympy.isprime(p):
+        raise Exception("p is not prime")
+    if p%3 != 1: #includes the special cases of p=2 and p=3
+        return (p-1)*(p-2)
+    else:
+        skip = []
+        # we'll just look in the first half, second half is the same but reversed and negative (mod p)
+        a = []
+        limit = int((p-1)/2)+1
+        for x in range(1,limit):
+            if x not in skip:
+                temp = power_mod(x,3,p)
+                a.append(temp)
+                skip_offset = quad_mod(1,3*x,3*x**2,p)
+                #skip += [x+s for s in skip_offset if x+s < limit]
+                skip.append(x+skip_offset[0])
+                check = x+skip_offset[1]
+                if check < limit:
+                    skip.append(check)
+                    a.append(p-temp)
+            else:
+                skip.pop(skip.index(x))
+        # besides p = 7 and 13, these just eat up a ton of memory to spit out everything in a
+        #b = [(x[0]+x[1])%p for x in itertools.product(a,a)]
+        #c = [x for x in list(set(b)) if x in a]
+
+        # the one thing I actually need to know is how many times each solution appears in b
+        # but I can just check that once
+        i = a[0]
+        count = 0
+        for j in a:
+            if (i-j)%p in a:
+                count += 1
+        
+        if p in [7,13]:
+            return 0
+        else:
+            d = count*9 # 3 copies of each underlying number, two numbers added to get c[0]
+            if verbose:
+                print("d", d)
+            return d*len(a)
+
+total = 0
+for i in sympy.primerange(0,6*10**6):
+    temp = F(i)
+    total += temp
+    print(i)
+
+# Note: this works, but slows down a lot past a few thousand
+# going to try cubic residues http://m-hikari.com/ija/ija-2015/ija-5-8-2015/p/namliIJA5-8-2015.pdf
