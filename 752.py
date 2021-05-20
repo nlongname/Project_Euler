@@ -98,4 +98,4 @@ print(g_sum(10**6))
 
 #This is way too slow, but it does work
 #Biggest problem seems to be how long it takes to find the first (n, 0)
-#After that, I would think it's how long it takes to find the right power for (1, 0)
+#After that, I would think it's how long it takes to find the right power to get (1, 0)

@@ -67,7 +67,7 @@ def fib_list(n):
 #print(sum(sums))
 
 #frustratingly, this is super fast,
-#matches with the slower versions and the example
+#matches with the slower versions and the example,
 #but does not produce the right result
 #haven't figured out why yet
 f = fib_list(90)
