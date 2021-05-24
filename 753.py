@@ -170,6 +170,7 @@ def F(p:int,verbose:bool=False): #assuming p is prime
     if p%3 != 1: #includes the special cases of p=2 and p=3
         return (p-1)*(p-2)
     else:
+        """
         skip = []
         # we'll just look in the first half, second half is the same but reversed and negative (mod p)
         a = []
@@ -187,6 +188,15 @@ def F(p:int,verbose:bool=False): #assuming p is prime
                     a.append(p-temp)
             else:
                 skip.pop(skip.index(x))
+        """
+        # if p%3 == 1, we can fairly easily check whether any number has a cube root
+        # using the Euler criterion, which should be faster than solving quadratics
+        # c.f. http://m-hikari.com/ija/ija-2015/ija-5-8-2015/p/namliIJA5-8-2015.pdf
+        exp = int((p-1)/3)
+        limit = int((p-1)/2)+1
+        checks = [power_mod(i, exp, p) for i in range(1,limit)]
+        a = [i+1 for i in range(limit-1) if checks[i] == 1]
+        
         # besides p = 7 and 13, these just eat up a ton of memory to spit out everything in a
         #b = [(x[0]+x[1])%p for x in itertools.product(a,a)]
         #c = [x for x in list(set(b)) if x in a]
@@ -196,22 +206,40 @@ def F(p:int,verbose:bool=False): #assuming p is prime
         i = a[0]
         count = 0
         for j in a:
-            if (i-j)%p in a:
+            if j-i in a: # we're really checking whether (i-j)%p is in a, but since we left out the negatives, we actually want (j-i)%p, but we know j > i, so it's just j-i
                 count += 1
-        
+        count *= 2
+        if limit-1 in a:
+            count += 1
+        if verbose:
+            print(a)
+
         if p in [7,13]:
             return 0
         else:
             d = count*9 # 3 copies of each underlying number, two numbers added to get c[0]
             if verbose:
                 print("d", d)
-            return d*len(a)
-
+            return d*len(a)*2
+"""
 total = 0
 for i in sympy.primerange(0,6*10**6):
     temp = F(i)
     total += temp
-    print(i)
-
-# Note: this works, but slows down a lot past a few thousand
-# going to try cubic residues http://m-hikari.com/ija/ija-2015/ija-5-8-2015/p/namliIJA5-8-2015.pdf
+    print(i, temp)
+"""
+p=5999947
+exp = int((p-1)/3)
+limit = int((p-1)/2)+1
+#checks = [power_mod(i, exp, p) for i in range(1,limit)]
+#a = [i+1 for i in range(limit-1) if checks[i] == 1]
+hold = 0
+count = 0
+for i in range(limit-1):
+    current = power_mod(i,exp,p)
+    if i%100000==0:
+        print(i)
+    if hold != 0 and current-hold == 1:
+        print(i)
+        count += 1
+    hold = current
